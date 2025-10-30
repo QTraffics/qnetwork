@@ -1,4 +1,4 @@
-package qnetwork
+package netvars
 
 import "time"
 

@@ -3,8 +3,8 @@ package control
 import (
 	"syscall"
 
-	"github.com/QTraffics/qtfra/ex"
-	"github.com/QTraffics/qtfra/values"
+	"github.com/qtraffics/qtfra/ex"
+	"github.com/qtraffics/qtfra/values"
 )
 
 type Func = func(network, address string, conn syscall.RawConn) error

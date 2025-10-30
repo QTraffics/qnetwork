@@ -4,7 +4,7 @@ import (
 	"net"
 	"net/netip"
 
-	"github.com/QTraffics/qtfra/ex"
+	"github.com/qtraffics/qtfra/ex"
 )
 
 var _ InterfaceFinder = (*DefaultInterfaceFinder)(nil)

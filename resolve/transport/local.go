@@ -12,13 +12,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/QTraffics/qnetwork"
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/dialer"
-	"github.com/QTraffics/qnetwork/resolve/hosts"
-	"github.com/QTraffics/qtfra/enhancements/maplib"
-	"github.com/QTraffics/qtfra/ex"
-	"github.com/QTraffics/qtfra/values"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/dialer"
+	"github.com/qtraffics/qnetwork/netvars"
+	"github.com/qtraffics/qnetwork/resolve/hosts"
+	"github.com/qtraffics/qtfra/enhancements/maplib"
+	"github.com/qtraffics/qtfra/ex"
+
 	"github.com/miekg/dns"
 )
 
@@ -42,7 +42,9 @@ type LocalTransport struct {
 }
 
 func NewLocalTransport(ctx context.Context, options LocalTransportOptions) *LocalTransport {
-	options.Dialer = values.UseDefaultNil(options.Dialer, dialer.System)
+	if options.Dialer == nil {
+		options.Dialer = dialer.System
+	}
 	return &LocalTransport{
 		configCtx: ctx,
 		host:      options.Host,
@@ -59,7 +61,7 @@ func (t *LocalTransport) Exchange(ctx context.Context, message *dns.Msg) (*dns.M
 	if (question.Qtype == dns.TypeA || question.Qtype == dns.TypeAAAA) && t.host != nil {
 		address := t.host.Lookup(domain)
 		if len(address) > 0 {
-			return FixedResponse(message.Id, question, address, qnetwork.DefaultResolverTTL), nil
+			return FixedResponse(message.Id, question, address, netvars.DefaultResolverTTL), nil
 		}
 	}
 	systemConfig := getSystemDNSConfig(t.configCtx)
@@ -161,7 +163,6 @@ func (t *LocalTransport) tryOneName(ctx context.Context, config *dnsConfig, fqdn
 				config.timeout,
 				config.useTCP,
 				config.trustAD)
-
 			if err != nil {
 				lastErr = err
 				continue
@@ -173,9 +174,10 @@ func (t *LocalTransport) tryOneName(ctx context.Context, config *dnsConfig, fqdn
 }
 
 func (t *LocalTransport) exchangeOne(ctx context.Context, transport *UDPTransport, messageID uint16,
-	question dns.Question, timeout time.Duration, useTCP, ad bool) (*dns.Msg, error) {
+	question dns.Question, timeout time.Duration, useTCP, ad bool,
+) (*dns.Msg, error) {
 	if timeout == 0 {
-		timeout = qnetwork.DefaultResolverReadTimeout
+		timeout = netvars.DefaultResolverReadTimeout
 	}
 	if transport == nil {
 		return nil, ex.New("missing transport")
@@ -302,8 +304,7 @@ func (t *LocalTransport) pullTransport(server addrs.Socksaddr) (*UDPTransport, e
 		return tt, nil
 	}
 
-	var tt *UDPTransport
-	tt = NewUDP(server, UDPTransportOptions{Dialer: t.dialer})
+	tt := NewUDP(server, UDPTransportOptions{Dialer: t.dialer})
 
 	t.transports[addressStr] = tt
 

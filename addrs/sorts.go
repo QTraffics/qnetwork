@@ -4,7 +4,7 @@ import (
 	"net/netip"
 	"sort"
 
-	"github.com/QTraffics/qnetwork/meta"
+	"github.com/qtraffics/qnetwork/meta"
 )
 
 func SortAddresses(addresses []netip.Addr, strategy meta.Strategy) []netip.Addr {
@@ -20,7 +20,7 @@ func SortAddresses(addresses []netip.Addr, strategy meta.Strategy) []netip.Addr 
 	switch strategy {
 	case meta.StrategyPreferIPv4, meta.StrategyIPv4Only:
 		ipv4First = true
-	case meta.StrategyPreferIPv6, meta.StrategyIPv6Only:
+	case meta.StrategyPreferIPv6, meta.StrategyIPv6Only, meta.StrategyDefault:
 		ipv4First = false
 	default:
 		return sorted
@@ -49,6 +49,7 @@ func SortAddresses(addresses []netip.Addr, strategy meta.Strategy) []netip.Addr 
 
 func FilterAddressByStrategy(addresses []netip.Addr, strategy meta.Strategy) []netip.Addr {
 	var filtered []netip.Addr
+	//nolint:exhaustive
 	switch strategy {
 	case meta.StrategyIPv4Only:
 		for _, addr := range addresses {

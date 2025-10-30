@@ -4,9 +4,7 @@ import (
 	"fmt"
 )
 
-var (
-	ErrInvalidStrategy = fmt.Errorf("network: invalid strategy")
-)
+var ErrInvalidStrategy = fmt.Errorf("network: invalid strategy")
 
 type Strategy uint8
 
@@ -20,6 +18,7 @@ const (
 )
 
 func (s Strategy) String() string {
+	//nolint:exhaustive
 	switch s {
 	case StrategyPreferIPv4:
 		return "prefer_ipv4"

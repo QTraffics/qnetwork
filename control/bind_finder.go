@@ -6,8 +6,8 @@ import (
 	"slices"
 	"unsafe"
 
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qtfra/enhancements/slicelib"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qtfra/enhancements/slicelib"
 )
 
 type InterfaceFinder interface {

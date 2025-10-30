@@ -1,9 +1,8 @@
-module github.com/QTraffics/qnetwork
+module github.com/qtraffics/qnetwork
 
 go 1.25.1
 
 require (
-	github.com/QTraffics/qtfra v0.0.1
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elastic/go-freelru v0.16.0
 	github.com/metacubex/tfo-go v0.0.0-20251024101424-368b42b59148
@@ -14,6 +13,7 @@ require (
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
+	github.com/qtraffics/qtfra v0.0.2 // indirect
 	golang.org/x/mod v0.25.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect

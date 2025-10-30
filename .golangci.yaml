@@ -1,0 +1,69 @@
+version: "2"
+run:
+  go: "1.25"
+  timeout: "30s"
+  tests: true
+  build-tags:
+    - sys_debug
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - paralleltest
+    - staticcheck
+    - bodyclose
+    - errname
+    - embeddedstructfieldcheck
+    - exhaustive
+    - exptostd
+    - gocheckcompilerdirectives
+    - nestif
+    - nilerr
+    - nolintlint
+    - paralleltest
+    - tagalign
+    - tagliatelle
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - -S1000
+        - -S1008
+        - -S1017
+        - -ST1001
+        - -ST1003
+        - -QF1001
+        - -QF1003
+        - -QF1008
+    nestif:
+      min-complexity: 8
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - prefix(github.com/qtraffics/)
+        - default
+      custom-order: true
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

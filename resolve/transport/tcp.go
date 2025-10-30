@@ -6,10 +6,11 @@ import (
 	"io"
 	"net"
 
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/dialer"
-	"github.com/QTraffics/qnetwork/meta"
-	"github.com/QTraffics/qtfra/buf"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/dialer"
+	"github.com/qtraffics/qnetwork/meta"
+	"github.com/qtraffics/qtfra/buf"
+
 	"github.com/miekg/dns"
 )
 
@@ -26,7 +27,7 @@ func NewTCPTransport(server addrs.Socksaddr, options TCPTransportOptions) (*TCPT
 	if server.Port == 0 {
 		server.Port = 53
 	}
-	var realDialer = options.Dialer
+	realDialer := options.Dialer
 	if realDialer == nil {
 		realDialer = dialer.System
 	}

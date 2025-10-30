@@ -27,11 +27,11 @@ func FromParseSocksaddrHostPort(host string, port uint16) Socksaddr {
 			Fqdn: host,
 			Port: port,
 		}
-	} else {
-		return Socksaddr{
-			Addr: netAddr,
-			Port: port,
-		}
+	}
+
+	return Socksaddr{
+		Addr: netAddr,
+		Port: port,
 	}
 }
 
@@ -43,11 +43,11 @@ func FromParseSocksaddrHostPortStr(host string, portStr string) Socksaddr {
 			Fqdn: host,
 			Port: uint16(port),
 		}
-	} else {
-		return Socksaddr{
-			Addr: netAddr,
-			Port: uint16(port),
-		}
+	}
+
+	return Socksaddr{
+		Addr: netAddr,
+		Port: uint16(port),
 	}
 }
 

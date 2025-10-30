@@ -4,8 +4,8 @@ import (
 	"net/netip"
 	"syscall"
 
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qtfra/ex"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qtfra/ex"
 )
 
 func BindToInterface(finder InterfaceFinder, interfaceName string, interfaceIndex int) Func {

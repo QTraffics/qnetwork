@@ -6,7 +6,8 @@ import (
 	urlpkg "net/url"
 	"strings"
 
-	"github.com/QTraffics/qtfra/enhancements/slicelib"
+	"github.com/qtraffics/qtfra/enhancements/slicelib"
+
 	"github.com/miekg/dns"
 )
 
@@ -82,6 +83,7 @@ func FqdnToDomain(fqdn string) string {
 func Is4(ip netip.Addr) bool {
 	return ip.Is4() || ip.Is4In6()
 }
+
 func Is6(ip netip.Addr) bool {
 	return ip.Is6() && !ip.Is4In6()
 }
@@ -100,7 +102,6 @@ func CopyURL(raw *urlpkg.URL) *urlpkg.URL {
 		Fragment:    raw.Fragment,
 		RawFragment: raw.RawFragment,
 	}
-
 }
 
 func copyUrlUser(u *urlpkg.Userinfo) *urlpkg.Userinfo {

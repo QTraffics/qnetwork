@@ -5,8 +5,8 @@ import (
 	"net"
 	"net/netip"
 
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/meta"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/meta"
 )
 
 type Dialer interface {

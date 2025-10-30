@@ -6,17 +6,17 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/QTraffics/qnetwork"
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/meta"
-	"github.com/QTraffics/qtfra/enhancements/slicelib"
-	"github.com/QTraffics/qtfra/ex"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/meta"
+	"github.com/qtraffics/qnetwork/netvars"
+	"github.com/qtraffics/qtfra/enhancements/slicelib"
+	"github.com/qtraffics/qtfra/ex"
 )
 
 func DialParallel(ctx context.Context, dialer Dialer, network meta.Network, addresses []netip.Addr, port uint16, strategy meta.Strategy, fallbackDelay time.Duration) (net.Conn, error) {
 	preferIPv6 := strategy == meta.StrategyPreferIPv6
 	if fallbackDelay == 0 {
-		fallbackDelay = qnetwork.DefaultDialerFallbackDelay
+		fallbackDelay = netvars.DefaultDialerFallbackDelay
 	}
 
 	returned := make(chan struct{})
@@ -47,6 +47,7 @@ func DialParallel(ctx context.Context, dialer Dialer, network meta.Network, addr
 	type dialResult struct {
 		net.Conn
 		error
+
 		primary bool
 		done    bool
 	}

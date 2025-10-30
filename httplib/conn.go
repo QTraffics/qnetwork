@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/QTraffics/qtfra/registry"
+	"github.com/qtraffics/qtfra/registry"
 )
 
 type HTTPServerConn net.Conn

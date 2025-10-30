@@ -37,6 +37,7 @@ type BackOffTicker struct {
 func NewBackoffTicker(bf backoff.Config, initialCount uint64) *BackOffTicker {
 	return &BackOffTicker{backoff: bf, count: initialCount}
 }
+
 func NewBackoffTicker0(bf backoff.Config) *BackOffTicker {
 	return &BackOffTicker{backoff: bf, count: 0}
 }

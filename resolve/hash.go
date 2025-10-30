@@ -3,10 +3,10 @@ package resolve
 import (
 	"encoding/binary"
 
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qtfra/enhancements/pool"
-	"github.com/cespare/xxhash/v2"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qtfra/enhancements/pool"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/miekg/dns"
 )
 

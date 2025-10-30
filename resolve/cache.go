@@ -5,9 +5,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/QTraffics/qnetwork"
-	"github.com/QTraffics/qtfra/enhancements/singleflight"
-	"github.com/QTraffics/qtfra/ex"
+	"github.com/qtraffics/qnetwork/netvars"
+	"github.com/qtraffics/qtfra/enhancements/singleflight"
+	"github.com/qtraffics/qtfra/ex"
+
 	"github.com/elastic/go-freelru"
 	"github.com/miekg/dns"
 )
@@ -149,7 +150,7 @@ func NewCacheSize(opt CacheOptions) Cache {
 	}
 
 	c := &defaultCache{}
-	c.lru, _ = freelru.NewSharded[dns.Question, CacheEntry](opt.Size, hashQuestion)
+	c.lru = ex.Must0(freelru.NewSharded[dns.Question, CacheEntry](opt.Size, hashQuestion))
 	c.minTTL, c.maxTTL = opt.MinTTL, opt.MaxTTL
 
 	return c
@@ -158,14 +159,13 @@ func NewCacheSize(opt CacheOptions) Cache {
 func NewCache() Cache {
 	return NewCacheSize(
 		CacheOptions{
-			Size:   qnetwork.DefaultResolverCacheSize,
+			Size:   netvars.DefaultResolverCacheSize,
 			MinTTL: 0,
 			MaxTTL: math.MaxUint32,
 		})
 }
 
-type noopCache struct {
-}
+type noopCache struct{}
 
 func (n *noopCache) LoadOrStore(ctx context.Context, message *dns.Msg, constructor func(ctx context.Context, message *dns.Msg) (*dns.Msg, error)) (*dns.Msg, error) {
 	if constructor != nil {

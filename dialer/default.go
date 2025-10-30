@@ -7,21 +7,18 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/QTraffics/qnetwork"
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/control"
-	"github.com/QTraffics/qnetwork/meta"
-	"github.com/QTraffics/qtfra/ex"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/control"
+	"github.com/qtraffics/qnetwork/meta"
+	"github.com/qtraffics/qnetwork/netvars"
+	"github.com/qtraffics/qtfra/ex"
+
 	"github.com/metacubex/tfo-go"
 )
 
-var (
-	System = NewDefault()
-)
+var System = NewDefault()
 
-var (
-	_ ParallelDialer = (*DefaultDialer)(nil)
-)
+var _ ParallelDialer = (*DefaultDialer)(nil)
 
 // DefaultDialer Only support dial tcp and udp Protocol.
 // only can use to dial ip address ,not support resolve fqdn to ip address.
@@ -38,7 +35,7 @@ type DefaultDialer struct {
 }
 
 func (d *DefaultDialer) DialParallel(ctx context.Context, network meta.Network, address []netip.Addr, port uint16) (net.Conn, error) {
-	return DialParallel(ctx, d, network, address, port, meta.StrategyDefault, qnetwork.DefaultDialerFallbackDelay)
+	return DialParallel(ctx, d, network, address, port, meta.StrategyDefault, netvars.DefaultDialerFallbackDelay)
 }
 
 func (d *DefaultDialer) DialContext(ctx context.Context, network meta.Network, address addrs.Socksaddr) (net.Conn, error) {
@@ -56,7 +53,7 @@ func (d *DefaultDialer) DialContext(ctx context.Context, network meta.Network, a
 
 	switch network.Protocol {
 	case meta.ProtocolTCP:
-		var realDialer = d.dialer6
+		realDialer := d.dialer6
 		if address.Addr.Is4() {
 			realDialer = d.dialer4
 		}
@@ -112,11 +109,11 @@ func NewDefault() *DefaultDialer {
 	return NewDefaultConfig(Config{
 		Keepalive: net.KeepAliveConfig{
 			Enable:   true,
-			Idle:     qnetwork.DefaultTCPKeepAliveInitial,
-			Interval: qnetwork.DefaultTCPKeepAliveInterval,
-			Count:    qnetwork.DefaultTCPKeepAliveProbeCount,
+			Idle:     netvars.DefaultTCPKeepAliveInitial,
+			Interval: netvars.DefaultTCPKeepAliveInterval,
+			Count:    netvars.DefaultTCPKeepAliveProbeCount,
 		},
-		Timeout: qnetwork.DefaultDialerTimeout,
+		Timeout: netvars.DefaultDialerTimeout,
 	})
 }
 
@@ -136,7 +133,7 @@ func NewDefaultConfig(config Config) *DefaultDialer {
 		dialer.Control = control.Append(dialer.Control, control.RoutingMark(config.FwMark))
 		listener.Control = control.Append(listener.Control, control.RoutingMark(config.FwMark))
 	}
-	dialer.Timeout = cmp.Or(config.Timeout, qnetwork.DefaultDialerTimeout)
+	dialer.Timeout = cmp.Or(config.Timeout, netvars.DefaultDialerTimeout)
 	dialer.KeepAliveConfig = config.Keepalive
 
 	if config.ReuseAddr {

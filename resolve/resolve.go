@@ -1,9 +1,10 @@
 package resolve
 
 import (
-	"github.com/QTraffics/qnetwork/resolve/transport"
-	"github.com/QTraffics/qtfra/enhancements/slicelib"
-	"github.com/QTraffics/qtfra/ex"
+	"github.com/qtraffics/qnetwork/resolve/transport"
+	"github.com/qtraffics/qtfra/enhancements/slicelib"
+	"github.com/qtraffics/qtfra/ex"
+
 	"github.com/miekg/dns"
 )
 

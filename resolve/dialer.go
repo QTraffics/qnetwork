@@ -5,15 +5,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/dialer"
-	"github.com/QTraffics/qnetwork/meta"
-	"github.com/QTraffics/qtfra/ex"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/dialer"
+	"github.com/qtraffics/qnetwork/meta"
+	"github.com/qtraffics/qtfra/ex"
 )
 
-var (
-	SystemResolveDialer = NewResolverDialerSystem()
-)
+var SystemResolveDialer = NewResolverDialerSystem()
 
 type DialerOptions struct {
 	UnderlayDialer dialer.Dialer

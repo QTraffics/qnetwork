@@ -7,7 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/QTraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/addrs"
+
 	"github.com/metacubex/tfo-go"
 )
 

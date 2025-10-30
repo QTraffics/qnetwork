@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/QTraffics/qtfra/enhancements/slicelib"
+	"github.com/qtraffics/qtfra/enhancements/slicelib"
 )
 
 type Protocol string

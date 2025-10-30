@@ -40,6 +40,7 @@ func (n Network) Is6() bool {
 func (n Network) IsUDP() bool {
 	return n.Protocol == ProtocolUDP
 }
+
 func (n Network) IsTCP() bool {
 	return n.Protocol == ProtocolTCP
 }

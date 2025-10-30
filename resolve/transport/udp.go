@@ -8,12 +8,13 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/dialer"
-	"github.com/QTraffics/qnetwork/meta"
-	"github.com/QTraffics/qtfra/buf"
-	"github.com/QTraffics/qtfra/ex"
-	"github.com/QTraffics/qtfra/values"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/dialer"
+	"github.com/qtraffics/qnetwork/meta"
+	"github.com/qtraffics/qtfra/buf"
+	"github.com/qtraffics/qtfra/ex"
+	"github.com/qtraffics/qtfra/values"
+
 	"github.com/miekg/dns"
 )
 
@@ -40,7 +41,9 @@ type UDPTransport struct {
 
 func NewUDP(server addrs.Socksaddr, options UDPTransportOptions) *UDPTransport {
 	server.Port = values.UseDefault(server.Port, 53)
-	options.Dialer = values.UseDefaultNil(options.Dialer, dialer.System)
+	if options.Dialer == nil {
+		options.Dialer = dialer.System
+	}
 
 	t := &UDPTransport{
 		tcp: &TCPTransport{
@@ -224,6 +227,7 @@ func exchangeUDP(ctx context.Context, conn net.Conn, message *dns.Msg) (*dns.Msg
 
 type dnsConnection struct {
 	net.Conn
+
 	access    sync.RWMutex
 	done      chan struct{}
 	closeOnce sync.Once

@@ -5,12 +5,13 @@ import (
 	"net"
 	"net/netip"
 
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/control"
-	"github.com/QTraffics/qnetwork/meta"
-	"github.com/QTraffics/qnetwork/resolve"
-	"github.com/QTraffics/qtfra/enhancements/slicelib"
-	"github.com/QTraffics/qtfra/ex"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/control"
+	"github.com/qtraffics/qnetwork/meta"
+	"github.com/qtraffics/qnetwork/resolve"
+	"github.com/qtraffics/qtfra/enhancements/slicelib"
+	"github.com/qtraffics/qtfra/ex"
+
 	"github.com/metacubex/tfo-go"
 )
 
@@ -51,12 +52,10 @@ func ListenUDP(ctx context.Context, address string, port uint16, opt Options) (*
 }
 
 func (l *Listener) ListenUDP(ctx context.Context, address string, port uint16) (*net.UDPConn, error) {
-	var (
-		listenConfig net.ListenConfig
-	)
+	var listenConfig net.ListenConfig
 
 	if l.options.Interface != "" {
-		var interfaceFinder = control.NewDefaultInterfaceFinder()
+		interfaceFinder := control.NewDefaultInterfaceFinder()
 		listenConfig.Control = control.Append(listenConfig.Control, control.BindToInterface(interfaceFinder, l.options.Interface, -1))
 	}
 
@@ -86,12 +85,10 @@ func (l *Listener) ListenUDP(ctx context.Context, address string, port uint16) (
 }
 
 func (l *Listener) ListenTCP(ctx context.Context, address string, port uint16) (net.Listener, error) {
-	var (
-		listenConfig net.ListenConfig
-	)
+	var listenConfig net.ListenConfig
 
 	if l.options.Interface != "" {
-		var interfaceFinder = control.NewDefaultInterfaceFinder()
+		interfaceFinder := control.NewDefaultInterfaceFinder()
 		listenConfig.Control = control.Append(listenConfig.Control, control.BindToInterface(interfaceFinder, l.options.Interface, -1))
 	}
 

@@ -5,14 +5,15 @@ import (
 	"io"
 	"net/netip"
 
-	"github.com/QTraffics/qnetwork"
-	"github.com/QTraffics/qnetwork/addrs"
-	"github.com/QTraffics/qnetwork/dialer"
-	"github.com/QTraffics/qnetwork/meta"
-	"github.com/QTraffics/qnetwork/resolve/hosts"
-	"github.com/QTraffics/qnetwork/resolve/transport"
-	"github.com/QTraffics/qtfra/ex"
-	"github.com/QTraffics/qtfra/threads"
+	"github.com/qtraffics/qnetwork/addrs"
+	"github.com/qtraffics/qnetwork/dialer"
+	"github.com/qtraffics/qnetwork/meta"
+	"github.com/qtraffics/qnetwork/netvars"
+	"github.com/qtraffics/qnetwork/resolve/hosts"
+	"github.com/qtraffics/qnetwork/resolve/transport"
+	"github.com/qtraffics/qtfra/ex"
+	"github.com/qtraffics/qtfra/threads"
+
 	"github.com/miekg/dns"
 )
 
@@ -88,7 +89,7 @@ func (c *Client) lookupToExchange(ctx context.Context, fqdn string, qtype uint16
 	}
 
 	requestEdns0 := &dns.OPT{}
-	requestEdns0.SetUDPSize(qnetwork.MaxDNSUDPSize)
+	requestEdns0.SetUDPSize(netvars.MaxDNSUDPSize)
 
 	message := &dns.Msg{
 		MsgHdr: dns.MsgHdr{
@@ -173,7 +174,7 @@ func NewClientContext(ctx context.Context, option ClientOptions) *Client {
 func sortAddresses(addresses4 []netip.Addr, addresses6 []netip.Addr, strategy meta.Strategy) []netip.Addr {
 	if strategy == meta.StrategyPreferIPv6 || strategy == meta.StrategyDefault {
 		return append(addresses6, addresses4...)
-	} else {
-		return append(addresses4, addresses6...)
 	}
+
+	return append(addresses4, addresses6...)
 }
