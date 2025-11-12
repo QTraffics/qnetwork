@@ -129,3 +129,8 @@ func (a Socksaddr) IPAddr() *net.IPAddr {
 func (a Socksaddr) AddrPort() netip.AddrPort {
 	return netip.AddrPortFrom(a.Addr, a.Port)
 }
+
+func (a Socksaddr) NoPort() Socksaddr {
+	a.Port = 0
+	return a
+}

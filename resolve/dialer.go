@@ -8,6 +8,7 @@ import (
 	"github.com/qtraffics/qnetwork/addrs"
 	"github.com/qtraffics/qnetwork/dialer"
 	"github.com/qtraffics/qnetwork/meta"
+	"github.com/qtraffics/qnetwork/netio"
 	"github.com/qtraffics/qtfra/ex"
 )
 
@@ -83,7 +84,16 @@ func (d *Dialer) DialContext(ctx context.Context, network meta.Network, address 
 }
 
 func (d *Dialer) ListenPacket(ctx context.Context, address addrs.Socksaddr) (net.PacketConn, error) {
-	// Relay Service doesn't need fullcone type udp
-
-	panic("not implemented")
+	if !address.FqdnOnly() {
+		return d.underlay.ListenPacket(ctx, address)
+	}
+	addresses, err := d.dnsClient.Lookup(ctx, address.Fqdn, meta.StrategyDefault)
+	if err != nil {
+		return nil, ex.Cause(err, "Lookup")
+	}
+	packetConn, err := netio.ListenPacketSerial(ctx, d.underlay, addresses, address.Port)
+	if err != nil {
+		return nil, ex.Cause(err, "ListenPacketSerial")
+	}
+	return netio.NewBidirectionalNatConn(packetConn, address, addrs.FromNetAddr(packetConn.LocalAddr())), nil
 }

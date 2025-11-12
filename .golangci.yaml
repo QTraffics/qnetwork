@@ -11,7 +11,6 @@ linters:
     - errcheck
     - govet
     - ineffassign
-    - paralleltest
     - staticcheck
     - bodyclose
     - errname
@@ -19,10 +18,8 @@ linters:
     - exhaustive
     - exptostd
     - gocheckcompilerdirectives
-    - nestif
     - nilerr
     - nolintlint
-    - paralleltest
     - tagalign
     - tagliatelle
   settings:
@@ -37,8 +34,6 @@ linters:
         - -QF1001
         - -QF1003
         - -QF1008
-    nestif:
-      min-complexity: 8
   exclusions:
     generated: lax
     presets:

@@ -13,9 +13,6 @@ func SortAddresses(addresses []netip.Addr, strategy meta.Strategy) []netip.Addr 
 	}
 	sorted := make([]netip.Addr, len(addresses))
 	copy(sorted, addresses)
-	if strategy == meta.StrategyDefault {
-		return sorted
-	}
 	var ipv4First bool
 	switch strategy {
 	case meta.StrategyPreferIPv4, meta.StrategyIPv4Only:

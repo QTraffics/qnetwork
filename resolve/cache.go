@@ -141,9 +141,9 @@ type CacheOptions struct {
 	MinTTL uint32
 }
 
-func NewCacheSize(opt CacheOptions) Cache {
+func NewCacheSize(opt CacheOptions) (Cache, error) {
 	if opt.Size <= 0 {
-		return &noopCache{}
+		return nil, ex.New("negative cache size")
 	}
 	if opt.MaxTTL < opt.MinTTL {
 		opt.MaxTTL = opt.MinTTL
@@ -153,31 +153,14 @@ func NewCacheSize(opt CacheOptions) Cache {
 	c.lru = ex.Must0(freelru.NewSharded[dns.Question, CacheEntry](opt.Size, hashQuestion))
 	c.minTTL, c.maxTTL = opt.MinTTL, opt.MaxTTL
 
-	return c
+	return c, nil
 }
 
 func NewCache() Cache {
-	return NewCacheSize(
+	return ex.Must0(NewCacheSize(
 		CacheOptions{
 			Size:   netvars.DefaultResolverCacheSize,
 			MinTTL: 0,
 			MaxTTL: math.MaxUint32,
-		})
-}
-
-type noopCache struct{}
-
-func (n *noopCache) LoadOrStore(ctx context.Context, message *dns.Msg, constructor func(ctx context.Context, message *dns.Msg) (*dns.Msg, error)) (*dns.Msg, error) {
-	if constructor != nil {
-		return constructor(ctx, message)
-	}
-	return nil, ex.New("noop")
-}
-
-func (n *noopCache) Store(message *dns.Msg) bool {
-	return false
-}
-
-func (n *noopCache) Clear() int {
-	return 0
+		}))
 }
