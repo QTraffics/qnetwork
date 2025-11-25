@@ -18,7 +18,7 @@ func CopyConn(ctx context.Context, source net.Conn, destination net.Conn) error 
 	)
 
 	if closer, ok := destination.(closeWriter); ok {
-		group.Append("upload", func(ctx context.Context) error {
+		group.Append("download", func(ctx context.Context) error {
 			_, err := iolib.Copy(source, destination)
 			if err == nil {
 				_ = closer.CloseWrite()
@@ -28,14 +28,14 @@ func CopyConn(ctx context.Context, source net.Conn, destination net.Conn) error 
 			return err
 		})
 	} else {
-		group.Append("upload", func(ctx context.Context) error {
+		group.Append("download", func(ctx context.Context) error {
 			defer iolib.Close(destination)
 			_, err := iolib.Copy(source, destination)
 			return err
 		})
 	}
 	if closer, ok := source.(closeWriter); ok {
-		group.Append("download", func(ctx context.Context) error {
+		group.Append("upload", func(ctx context.Context) error {
 			_, err := iolib.Copy(destination, source)
 			if err == nil {
 				_ = closer.CloseWrite()
@@ -45,7 +45,7 @@ func CopyConn(ctx context.Context, source net.Conn, destination net.Conn) error 
 			return err
 		})
 	} else {
-		group.Append("download", func(ctx context.Context) error {
+		group.Append("upload", func(ctx context.Context) error {
 			defer iolib.Close(source)
 			_, err := iolib.Copy(destination, source)
 			return err
@@ -53,7 +53,8 @@ func CopyConn(ctx context.Context, source net.Conn, destination net.Conn) error 
 	}
 
 	group.Cleanup(func() {
-		_ = iolib.Close(source, destination)
+		_ = iolib.Close(source)
+		_ = iolib.Close(destination)
 	})
 
 	return group.Run(ctx)

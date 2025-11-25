@@ -18,7 +18,7 @@ import (
 )
 
 var SystemDNSClient = NewClient(ClientOptions{
-	WithTransport: transport.NewLocalTransport(context.Background(), transport.LocalTransportOptions{
+	WithTransport: transport.NewLocalTransport(transport.LocalTransportOptions{
 		Dialer: dialer.System,
 		Host:   hosts.NewFileDefault(),
 	}),
@@ -31,8 +31,6 @@ type ClientOptions struct {
 }
 
 type Client struct {
-	ctx context.Context
-
 	transport transport.Transport
 	cache     Cache
 
@@ -146,12 +144,8 @@ func (c *Client) ClearCache() int {
 }
 
 func NewClient(option ClientOptions) *Client {
-	return NewClientContext(context.Background(), option)
-}
-
-func NewClientContext(ctx context.Context, option ClientOptions) *Client {
 	if option.WithTransport == nil {
-		option.WithTransport = transport.NewLocalTransport(ctx, transport.LocalTransportOptions{
+		option.WithTransport = transport.NewLocalTransport(transport.LocalTransportOptions{
 			Dialer: dialer.System,
 			Host:   hosts.NewFileDefault(),
 		})
@@ -162,7 +156,6 @@ func NewClientContext(ctx context.Context, option ClientOptions) *Client {
 	}
 
 	c := &Client{
-		ctx:          ctx,
 		transport:    option.WithTransport,
 		cache:        option.WithCache,
 		disableCache: option.DisableCache,

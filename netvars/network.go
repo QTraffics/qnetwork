@@ -14,8 +14,8 @@ const (
 	DefaultDialerTimeout       = 5 * time.Second
 
 	DefaultResolverReadTimeout = 5 * time.Second
-	DefaultResolverTTL         = 300 // seconds
-	DefaultResolverCacheSize   = 512
+	DefaultResolverTTL         = 600 // seconds
+	DefaultResolverCacheSize   = 1024
 )
 
 const (

@@ -30,7 +30,6 @@ type LocalTransportOptions struct {
 }
 
 type LocalTransport struct {
-	configCtx context.Context
 	// options
 	host   *hosts.File
 	dialer dialer.Dialer
@@ -41,14 +40,13 @@ type LocalTransport struct {
 	servers         maplib.Set[string]
 }
 
-func NewLocalTransport(ctx context.Context, options LocalTransportOptions) *LocalTransport {
+func NewLocalTransport(options LocalTransportOptions) *LocalTransport {
 	if options.Dialer == nil {
 		options.Dialer = dialer.System
 	}
 	return &LocalTransport{
-		configCtx: ctx,
-		host:      options.Host,
-		dialer:    options.Dialer,
+		host:   options.Host,
+		dialer: options.Dialer,
 	}
 }
 
@@ -64,7 +62,7 @@ func (t *LocalTransport) Exchange(ctx context.Context, message *dns.Msg) (*dns.M
 			return FixedResponse(message.Id, question, address, netvars.DefaultResolverTTL), nil
 		}
 	}
-	systemConfig := getSystemDNSConfig(t.configCtx)
+	systemConfig := getSystemDNSConfig(ctx)
 	if systemConfig.singleRequest || !(message.Question[0].Qtype == dns.TypeA || message.Question[0].Qtype == dns.TypeAAAA) {
 		return t.exchangeSingleRequest(ctx, systemConfig, message, domain)
 	}
@@ -94,15 +92,6 @@ func (t *LocalTransport) exchangeParallel(ctx context.Context, systemConfig *dns
 	results := make(chan queryResult)
 	startRacer := func(ctx context.Context, fqdn string) {
 		response, err := t.tryOneName(ctx, systemConfig, fqdn, message)
-		// The error about messages should be handled by DNSClient.
-		//
-		//if err == nil {
-		//	if response.Rcode != dns.RcodeSuccess {
-		//		err = ex.NewDNSRecordError(response.Rcode)
-		//	} else if len(addrs.DNSMessageToAddresses(response)) == 0 {
-		//		err = ex.New(fqdn, ": empty result")
-		//	}
-		//}
 		select {
 		case results <- queryResult{response, err}:
 		case <-returned:
@@ -215,40 +204,6 @@ func (t *LocalTransport) exchangeOne(ctx context.Context, transport *UDPTranspor
 	}
 	return response, nil
 }
-
-//func (t *LocalTransport) exchangeTCP(ctx context.Context, server addrs.Socksaddr, message *dns.Msg, timeout time.Duration) (*dns.Msg, error) {
-//	transport, err := t.pullTransport(server)
-//	if err != nil {
-//		return nil, ex.Cause(err, "pull transport")
-//	}
-//	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
-//	defer cancel()
-//	var response *dns.Msg
-//	response, err = transport.tcp.Exchange(timeoutCtx, message)
-//	if err != nil {
-//		return nil, ex.Cause(err, "exchange")
-//	}
-//	return response, nil
-//}
-//
-//func (t *LocalTransport) exchangeUDP(ctx context.Context, server addrs.Socksaddr, message *dns.Msg, timeout time.Duration) (*dns.Msg, error) {
-//	transport, err := t.pullTransport(server)
-//	if err != nil {
-//		return nil, ex.Cause(err, "pull transport")
-//	}
-//	udpCtx, cancel := context.WithTimeout(ctx, timeout)
-//	defer cancel()
-//	var response *dns.Msg
-//	// use UDPTransport.exchange instead of UDPTransport.Exchange to handle Truncated by this func
-//	response, err = transport.exchange(udpCtx, message)
-//	if err != nil {
-//		if ex.IsMulti(err, syscall.EMSGSIZE) {
-//			return t.exchangeTCP(ctx, server, message, timeout)
-//		}
-//		return response, err
-//	}
-//	return response, nil
-//}
 
 func (t *LocalTransport) updateTransports(servers []string) {
 	t.transportAccess.Lock()

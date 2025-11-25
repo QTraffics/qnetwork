@@ -114,19 +114,6 @@ func (l *Listener) ListenTCP(ctx context.Context, address string, port uint16) (
 	}
 
 	return ListenTCPSerial(ctx, listenConfig, network, addresses, l.options.TFO)
-	//if l.options.TFO {
-	//	var tfoConfig tfo.ListenConfig
-	//	tfoConfig.ListenConfig = listenConfig
-	//	listener, err = tfoConfig.Listen(ctx, network.String(), bindAddress)
-	//} else {
-	//	listener, err = listenConfig.Listen(ctx, network.String(), bindAddress)
-	//}
-	//
-	//if err != nil {
-	//	return nil, fmt.Errorf("listen: %w", err)
-	//}
-	//
-	//return listener, nil
 }
 
 func ListenTCPSerial(ctx context.Context, lc net.ListenConfig, network meta.Network, address []addrs.Socksaddr, enableTFO bool) (net.Listener, error) {

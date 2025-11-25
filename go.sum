@@ -16,6 +16,10 @@ github.com/qtraffics/qtfra v0.0.2 h1:vzpdNYo1xxc6xL0bil0eFD0T6szvSIMLdTTTPqPymvA
 github.com/qtraffics/qtfra v0.0.2/go.mod h1:zChs4SFvvOs1oTdKGP8bv47qYqTcNljLD5CYZIMt1xY=
 github.com/qtraffics/qtfra v0.0.5 h1:8YRCxr9VqzKsdZ5Q9enyL0CiKMgcjZicXkEfPyAn+BY=
 github.com/qtraffics/qtfra v0.0.5/go.mod h1:T6nKWFjs/+AmehUucm+bX5HbzVbOcPv3NMdIOpFwWR4=
+github.com/qtraffics/qtfra v0.0.6 h1:9Fxb9m+es94kfx6GKOD2tjrbRfLEIuBfcM2snfu3CXA=
+github.com/qtraffics/qtfra v0.0.6/go.mod h1:T6nKWFjs/+AmehUucm+bX5HbzVbOcPv3NMdIOpFwWR4=
+github.com/qtraffics/qtfra v0.0.7 h1:9XtTa9mOx8p2H58coL522n3jSMFbFyNx4eWj20j9B8s=
+github.com/qtraffics/qtfra v0.0.7/go.mod h1:T6nKWFjs/+AmehUucm+bX5HbzVbOcPv3NMdIOpFwWR4=
 golang.org/x/mod v0.25.0 h1:n7a+ZbQKQA/Ysbyb0/6IbB1H/X41mKgbhfv7AfG/44w=
 golang.org/x/mod v0.25.0/go.mod h1:IXM97Txy2VM4PJ3gI61r1YEk/gAj6zAHN3AdZt6S9Ww=
 golang.org/x/net v0.42.0 h1:jzkYrhi3YQWD6MLBJcsklgQsoAcw89EcZbJw8Z614hs=

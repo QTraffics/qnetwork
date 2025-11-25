@@ -25,6 +25,10 @@ type CacheEntry struct {
 	Message *dns.Msg
 }
 
+// TODO:
+// 1- cache stale
+// 2- negative cache + positive cache
+// 3- ....
 type defaultCache struct {
 	lru            freelru.Cache[dns.Question, CacheEntry]
 	minTTL, maxTTL uint32
