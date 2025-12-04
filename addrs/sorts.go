@@ -2,46 +2,38 @@ package addrs
 
 import (
 	"net/netip"
+	"slices"
 	"sort"
 
 	"github.com/qtraffics/qnetwork/meta"
 )
 
 func SortAddresses(addresses []netip.Addr, strategy meta.Strategy) []netip.Addr {
-	if len(addresses) == 0 {
-		return nil
-	}
-	sorted := make([]netip.Addr, len(addresses))
-	copy(sorted, addresses)
-	var ipv4First bool
-	switch strategy {
-	case meta.StrategyPreferIPv4, meta.StrategyIPv4Only:
-		ipv4First = true
-	case meta.StrategyPreferIPv6, meta.StrategyIPv6Only, meta.StrategyDefault:
-		ipv4First = false
-	default:
-		return sorted
-	}
-	sort.Slice(sorted, func(i, j int) bool {
-		a, b := sorted[i], sorted[j]
-		if ipv4First {
-			if a.Is4() && !b.Is4() {
-				return true
-			}
-			if !a.Is4() && b.Is4() {
-				return false
-			}
-		} else {
-			if a.Is6() && !b.Is6() {
-				return true
-			}
-			if !a.Is6() && b.Is6() {
-				return false
-			}
-		}
-		return false
-	})
+	sorted := slices.Clone(addresses)
+	SortAddressesInPlace(sorted, strategy)
 	return sorted
+}
+
+func SortAddressesInPlace(addresses []netip.Addr, strategy meta.Strategy) {
+	if strategy == meta.StrategyIPv4Only || strategy == meta.StrategyIPv6Only || len(addresses) <= 1 {
+		return
+	}
+
+	preferIPv4 := strategy == meta.StrategyPreferIPv4
+
+	if !preferIPv4 && strategy != meta.StrategyPreferIPv6 {
+		return
+	}
+
+	sort.Slice(addresses, func(i, j int) bool {
+		a4 := addresses[i].Is4()
+		b4 := addresses[j].Is4()
+
+		if preferIPv4 {
+			return a4 && !b4
+		}
+		return !a4 && b4
+	})
 }
 
 func FilterAddressByStrategy(addresses []netip.Addr, strategy meta.Strategy) []netip.Addr {

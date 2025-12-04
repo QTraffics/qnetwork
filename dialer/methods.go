@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/netip"
+	"slices"
 	"time"
 
 	"github.com/qtraffics/qnetwork/addrs"
@@ -13,8 +14,13 @@ import (
 	"github.com/qtraffics/qtfra/ex"
 )
 
-func DialParallel(ctx context.Context, dialer Dialer, network meta.Network, addresses []netip.Addr, port uint16, strategy meta.Strategy, fallbackDelay time.Duration) (net.Conn, error) {
-	preferIPv6 := strategy == meta.StrategyPreferIPv6
+func DialParallel(ctx context.Context, dialer Dialer, network meta.Network, addresses []netip.Addr, port uint16, conf HappyEyeballConf) (net.Conn, error) {
+	if network.Protocol == meta.ProtocolUDP || network.Version != meta.NetworkVersionDual {
+		return DialSerial(ctx, dialer, network, addrs.SortAddresses(addresses, conf.Strategy), port)
+	}
+
+	fallbackDelay := conf.FallbackDelay
+	strategy := conf.Strategy
 	if fallbackDelay == 0 {
 		fallbackDelay = netvars.DefaultDialerFallbackDelay
 	}
@@ -27,16 +33,14 @@ func DialParallel(ctx context.Context, dialer Dialer, network meta.Network, addr
 
 	if len(addresses4) == 0 || len(addresses6) == 0 {
 		return DialSerial(ctx, dialer, network, addresses, port)
-	}
-	if network.Version == meta.NetworkVersion4 || strategy == meta.StrategyIPv4Only {
+	} else if strategy == meta.StrategyIPv4Only {
 		return DialSerial(ctx, dialer, network, addresses4, port)
-	}
-
-	if network.Version == meta.NetworkVersion6 || strategy == meta.StrategyIPv6Only {
+	} else if strategy == meta.StrategyIPv6Only {
 		return DialSerial(ctx, dialer, network, addresses6, port)
 	}
 
 	var primaries, fallbacks []netip.Addr
+	preferIPv6 := strategy == meta.StrategyPreferIPv6
 	if preferIPv6 {
 		primaries = addresses6
 		fallbacks = addresses4
@@ -101,8 +105,15 @@ func DialParallel(ctx context.Context, dialer Dialer, network meta.Network, addr
 }
 
 func DialSerial(ctx context.Context, this Dialer, network meta.Network, address []netip.Addr, port uint16) (net.Conn, error) {
+	if network.Version != meta.NetworkVersionDual {
+		address = slices.DeleteFunc(address, func(addr netip.Addr) bool {
+			return network.Version == meta.NetworkVersion4 && addr.Is6() ||
+				network.Version == meta.NetworkVersion6 && addr.Is4()
+		})
+	}
+
 	if len(address) == 0 {
-		return nil, ex.New("no address to dial")
+		return nil, ex.New("no available address to dial")
 	}
 	var errs error
 	for _, aa := range address {

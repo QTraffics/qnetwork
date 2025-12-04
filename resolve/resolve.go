@@ -1,6 +1,9 @@
 package resolve
 
 import (
+	"net/netip"
+
+	"github.com/qtraffics/qnetwork/meta"
 	"github.com/qtraffics/qnetwork/resolve/transport"
 	"github.com/qtraffics/qtfra/enhancements/slicelib"
 	"github.com/qtraffics/qtfra/ex"
@@ -46,3 +49,11 @@ func NewDNSRecordError(rcode int) error {
 }
 
 var FixedResponse = transport.FixedResponse
+
+func sortAddresses(addresses4 []netip.Addr, addresses6 []netip.Addr, strategy meta.Strategy) []netip.Addr {
+	if strategy == meta.StrategyPreferIPv6 || strategy == meta.StrategyDefault {
+		return append(addresses6, addresses4...)
+	}
+
+	return append(addresses4, addresses6...)
+}

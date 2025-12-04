@@ -76,7 +76,7 @@ func (l *Listener) ListenUDP(ctx context.Context, address string, port uint16) (
 		network.Version = meta.NetworkVersion4
 	}
 
-	addresses, err := resolveListenAddresses(ctx, network, address, port, resolve.SystemDNSClient, meta.StrategyDefault)
+	addresses, err := resolveListenAddresses(ctx, network, address, port, resolve.SystemClient, meta.StrategyDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (l *Listener) ListenTCP(ctx context.Context, address string, port uint16) (
 		network.Version = meta.NetworkVersion4
 	}
 
-	addresses, err := resolveListenAddresses(ctx, network, address, port, resolve.SystemDNSClient, meta.StrategyDefault)
+	addresses, err := resolveListenAddresses(ctx, network, address, port, resolve.SystemClient, meta.StrategyDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func ListenUDPSerial(ctx context.Context, lc net.ListenConfig, network meta.Netw
 	return nil, ex.Cause(err, "ListenUDPSerial: all failed")
 }
 
-func resolveListenAddresses(ctx context.Context, network meta.Network, address string, port uint16, resolver *resolve.Client, strategy meta.Strategy) ([]addrs.Socksaddr, error) {
+func resolveListenAddresses(ctx context.Context, network meta.Network, address string, port uint16, resolver *resolve.TransportClient, strategy meta.Strategy) ([]addrs.Socksaddr, error) {
 	var addresses []addrs.Socksaddr
 	if sa := addrs.FromParseSocksaddrHostPort(address, port); sa.FqdnOnly() {
 		if network.Is4() && network.Is6() {

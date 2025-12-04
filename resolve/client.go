@@ -4,12 +4,10 @@ import (
 	"context"
 	"io"
 	"net/netip"
+	"sync/atomic"
 
 	"github.com/qtraffics/qnetwork/addrs"
-	"github.com/qtraffics/qnetwork/dialer"
 	"github.com/qtraffics/qnetwork/meta"
-	"github.com/qtraffics/qnetwork/netvars"
-	"github.com/qtraffics/qnetwork/resolve/hosts"
 	"github.com/qtraffics/qnetwork/resolve/transport"
 	"github.com/qtraffics/qtfra/ex"
 	"github.com/qtraffics/qtfra/threads"
@@ -17,44 +15,46 @@ import (
 	"github.com/miekg/dns"
 )
 
-var SystemDNSClient = NewClient(ClientOptions{
-	WithTransport: transport.NewLocalTransport(transport.LocalTransportOptions{
-		Dialer: dialer.System,
-		Host:   hosts.NewFileDefault(),
-	}),
-})
-
-type ClientOptions struct {
-	DisableCache  bool
-	WithCache     Cache
-	WithTransport transport.Transport
+type Client interface {
+	Lookup(ctx context.Context, fqdn string, strategy meta.Strategy) ([]netip.Addr, error)
+	Exchange(ctx context.Context, message *dns.Msg) (response *dns.Msg, err error)
 }
 
-type Client struct {
-	transport transport.Transport
-	cache     Cache
+type HeadlessClient struct {
+	cache Cache
 
-	disableCache bool
+	// internal
+	queryID uint32
 }
 
-func (c *Client) Lookup(ctx context.Context, fqdn string, strategy meta.Strategy) (addresses []netip.Addr, err error) {
+func NewHeadlessClient(cache Cache) *HeadlessClient {
+	c := new(HeadlessClient)
+	c.queryID = uint32(dns.Id())
+	c.cache = cache
+
+	return c
+}
+
+func (c *HeadlessClient) LookupTransport(ctx context.Context, trans transport.Transport, fqdn string,
+	strategy meta.Strategy,
+) (addresses []netip.Addr, err error) {
 	if fqdn == "" || fqdn == "." {
 		return nil, ex.New("fqdn is empty")
 	}
 	fqdn = dns.Fqdn(fqdn)
 
 	if strategy == meta.StrategyIPv4Only {
-		return c.lookupToExchange(ctx, fqdn, dns.TypeA)
+		return c.lookupToExchange(ctx, trans, fqdn, dns.TypeA)
 	}
 	if strategy == meta.StrategyIPv6Only {
-		return c.lookupToExchange(ctx, fqdn, dns.TypeAAAA)
+		return c.lookupToExchange(ctx, trans, fqdn, dns.TypeAAAA)
 	}
 
 	var response4, response6 []netip.Addr
 	var group threads.Group
 
 	group.Append("exchange4", func(ctx context.Context) error {
-		response, err := c.lookupToExchange(ctx, fqdn, dns.TypeA)
+		response, err := c.lookupToExchange(ctx, trans, fqdn, dns.TypeA)
 		if err != nil {
 			return ex.Cause(err, "lookup")
 		}
@@ -63,7 +63,7 @@ func (c *Client) Lookup(ctx context.Context, fqdn string, strategy meta.Strategy
 	})
 
 	group.Append("exchange6", func(ctx context.Context) error {
-		response, err := c.lookupToExchange(ctx, fqdn, dns.TypeAAAA)
+		response, err := c.lookupToExchange(ctx, trans, fqdn, dns.TypeAAAA)
 		if err != nil {
 			return ex.Cause(err, "lookup")
 		}
@@ -79,28 +79,24 @@ func (c *Client) Lookup(ctx context.Context, fqdn string, strategy meta.Strategy
 	return sortAddresses(response4, response6, strategy), nil
 }
 
-func (c *Client) lookupToExchange(ctx context.Context, fqdn string, qtype uint16) (addresses []netip.Addr, err error) {
+func (c *HeadlessClient) lookupToExchange(ctx context.Context, trans transport.Transport, fqdn string,
+	typ uint16,
+) (addresses []netip.Addr, err error) {
 	question := dns.Question{
 		Name:   fqdn,
-		Qtype:  qtype,
+		Qtype:  typ,
 		Qclass: dns.ClassINET,
 	}
 
-	requestEdns0 := &dns.OPT{}
-	requestEdns0.SetUDPSize(netvars.MaxDNSUDPSize)
-
 	message := &dns.Msg{
-		MsgHdr: dns.MsgHdr{
-			Id:               dns.Id(),
-			RecursionDesired: true,
-		},
 		Compress: true,
 		Question: []dns.Question{question},
-		Extra:    []dns.RR{requestEdns0},
 	}
+	message.Id = uint16(atomic.AddUint32(&c.queryID, 1))
+	message.RecursionDesired = true
 
 	var response *dns.Msg
-	response, err = c.Exchange(ctx, message)
+	response, err = c.ExchangeTransport(ctx, trans, message)
 	if err != nil || response == nil {
 		return nil, err
 	}
@@ -110,64 +106,50 @@ func (c *Client) lookupToExchange(ctx context.Context, fqdn string, qtype uint16
 	return addrs.DNSMessageToAddresses(response), nil
 }
 
-func (c *Client) Exchange(ctx context.Context, message *dns.Msg) (response *dns.Msg, err error) {
-	if !c.disableCache && c.cache != nil {
-		response, err = c.cache.LoadOrStore(ctx, message, c.transport.Exchange)
+func (c *HeadlessClient) ExchangeTransport(ctx context.Context, trans transport.Transport, message *dns.Msg) (response *dns.Msg, err error) {
+	if c.cache != nil {
+		response, err = c.cache.LoadOrStore(ctx, message, trans.Exchange)
 		if err != nil {
 			return
 		}
 		if response == nil {
-			return nil, ex.New("transport returned an nil message with nil error")
+			panic("transport returned an nil message with nil error")
 		}
 		return
 	}
-	return c.transport.Exchange(ctx, message)
+	return trans.Exchange(ctx, message)
 }
 
-func (c *Client) Close() error {
+func (c *HeadlessClient) Close() error {
+	c.CleanCache()
+	return nil
+}
+
+func (c *HeadlessClient) CleanCache() int {
 	if c.cache != nil {
-		c.cache.Clear()
+		return c.cache.Clear()
 	}
+	return 0
+}
+
+type TransportClient struct {
+	*HeadlessClient
+
+	Transport transport.Transport
+}
+
+func (c *TransportClient) Lookup(ctx context.Context, fqdn string, strategy meta.Strategy) (addresses []netip.Addr, err error) {
+	return c.HeadlessClient.LookupTransport(ctx, c.Transport, fqdn, strategy)
+}
+
+func (c *TransportClient) Exchange(ctx context.Context, message *dns.Msg) (response *dns.Msg, err error) {
+	return c.HeadlessClient.ExchangeTransport(ctx, c.Transport, message)
+}
+
+func (c *TransportClient) Close() error {
 	var err error
-	if cc, ok := c.transport.(io.Closer); ok {
+	if cc, ok := c.Transport.(io.Closer); ok {
 		err = cc.Close()
 	}
-	return err
-}
-
-func (c *Client) ClearCache() int {
-	var nn int
-	if c.cache != nil {
-		nn = c.cache.Clear()
-	}
-	return nn
-}
-
-func NewClient(option ClientOptions) *Client {
-	if option.WithTransport == nil {
-		option.WithTransport = transport.NewLocalTransport(transport.LocalTransportOptions{
-			Dialer: dialer.System,
-			Host:   hosts.NewFileDefault(),
-		})
-	}
-
-	if !option.DisableCache && option.WithCache == nil {
-		option.WithCache = NewCache()
-	}
-
-	c := &Client{
-		transport:    option.WithTransport,
-		cache:        option.WithCache,
-		disableCache: option.DisableCache,
-	}
-
-	return c
-}
-
-func sortAddresses(addresses4 []netip.Addr, addresses6 []netip.Addr, strategy meta.Strategy) []netip.Addr {
-	if strategy == meta.StrategyPreferIPv6 || strategy == meta.StrategyDefault {
-		return append(addresses6, addresses4...)
-	}
-
-	return append(addresses4, addresses6...)
+	return ex.Errors(err, c.HeadlessClient.Close())
 }

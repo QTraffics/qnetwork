@@ -40,7 +40,14 @@ type LocalTransport struct {
 	servers         maplib.Set[string]
 }
 
-func NewLocalTransport(options LocalTransportOptions) *LocalTransport {
+func NewLocalTransport(options *LocalTransportOptions) *LocalTransport {
+	if options == nil {
+		options = &LocalTransportOptions{
+			Dialer: dialer.System,
+			Host:   hosts.NewFileDefault(),
+		}
+	}
+
 	if options.Dialer == nil {
 		options.Dialer = dialer.System
 	}
