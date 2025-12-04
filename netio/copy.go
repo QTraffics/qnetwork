@@ -13,9 +13,7 @@ type closeWriter interface {
 }
 
 func CopyConn(ctx context.Context, source net.Conn, destination net.Conn) error {
-	var (
-		group threads.Group
-	)
+	var group threads.Group
 
 	if closer, ok := destination.(closeWriter); ok {
 		group.Append("download", func(ctx context.Context) error {

@@ -3,95 +3,83 @@ package resolve
 import (
 	"context"
 	"net"
-	"time"
 
 	"github.com/qtraffics/qnetwork/addrs"
 	"github.com/qtraffics/qnetwork/dialer"
 	"github.com/qtraffics/qnetwork/meta"
 	"github.com/qtraffics/qnetwork/netio"
+	"github.com/qtraffics/qnetwork/netvars"
 	"github.com/qtraffics/qtfra/ex"
 )
 
-var SystemResolveDialer = NewResolverDialerSystem()
-
-type DialerOptions struct {
-	UnderlayDialer dialer.Dialer
-	DNSClient      *Client
-
-	FallbackDelay time.Duration
-	Strategy      meta.Strategy
-}
 type Dialer struct {
-	underlay  dialer.Dialer
-	dnsClient *Client
+	parallelDialer dialer.ParallelDialer
+	dnsClient      Client
 
 	strategy meta.Strategy
-	fallback time.Duration
 }
 
-func NewResolveDialer(options DialerOptions) *Dialer {
-	if options.DNSClient == nil {
-		options.DNSClient = SystemDNSClient
-	}
-	if options.UnderlayDialer == nil {
-		options.UnderlayDialer = dialer.System
-	}
-
-	d := &Dialer{
-		underlay:  options.UnderlayDialer,
-		dnsClient: options.DNSClient,
-	}
-
-	return d
+func NewResolveDialer(underlay dialer.Dialer, client Client) *Dialer {
+	return NewResolvDialerWithStrategy(underlay, client, meta.StrategyDefault)
 }
 
-func NewResolverDialerSystem() *Dialer {
-	return NewResolveDialer(DialerOptions{
-		UnderlayDialer: dialer.System,
-		DNSClient:      SystemDNSClient,
-	})
+func NewResolvDialerWithStrategy(underlay dialer.Dialer, client Client, strategy meta.Strategy) *Dialer {
+	if rd, ok := underlay.(*Dialer); ok {
+		rd.dnsClient = client
+		rd.strategy = strategy
+		return rd
+	}
+
+	rd := &Dialer{}
+	if pd, ok := underlay.(dialer.ParallelDialer); ok {
+		rd.parallelDialer = pd
+	} else {
+		rd.parallelDialer = &dialer.DefaultParallelDialer{
+			Dialer: underlay,
+			Conf:   dialer.HappyEyeballConf{Strategy: strategy, FallbackDelay: netvars.DefaultDialerFallbackDelay},
+		}
+	}
+
+	rd.dnsClient = client
+	rd.strategy = strategy
+	return rd
 }
 
 func (d *Dialer) DialContext(ctx context.Context, network meta.Network, address addrs.Socksaddr) (net.Conn, error) {
 	if !address.FqdnOnly() {
-		return d.underlay.DialContext(ctx, network, address)
+		return d.parallelDialer.DialContext(ctx, network, address)
 	}
 	strategy := d.strategy
-	dialerParallel := d.strategy != meta.StrategyIPv6Only && strategy != meta.StrategyIPv4Only &&
-		network.Version == meta.NetworkVersionDual && d.fallback != 0 && network.Protocol == meta.ProtocolTCP
 
 	if (network.Version == meta.NetworkVersion6 && strategy == meta.StrategyIPv4Only) ||
 		(network.Version == meta.NetworkVersion4 && strategy == meta.StrategyIPv6Only) {
+		// fast filter out
 		return nil, ex.New("no available address to dial")
-	}
-	if network.Version == meta.NetworkVersion6 {
-		strategy = meta.StrategyIPv6Only
-	}
-	if network.Version == meta.NetworkVersion4 {
-		strategy = meta.StrategyIPv4Only
 	}
 
 	addresses, err := d.dnsClient.Lookup(ctx, address.Fqdn, strategy)
 	if err != nil {
 		return nil, ex.Cause(err, "lookup")
 	}
+	dialerParallel := strategy != meta.StrategyIPv6Only && strategy != meta.StrategyIPv4Only &&
+		network.Version == meta.NetworkVersionDual && network.Protocol == meta.ProtocolTCP && len(addresses) >= 2
 
 	if dialerParallel {
-		return dialer.DialParallel(ctx, d.underlay, network, addresses, address.Port, strategy, d.fallback)
+		return d.parallelDialer.DialParallel(ctx, network, addresses, address.Port)
 	}
 
-	return dialer.DialSerial(ctx, d.underlay, network, addresses, address.Port)
+	return dialer.DialSerial(ctx, d.parallelDialer, network, addresses, address.Port)
 }
 
 func (d *Dialer) ListenPacket(ctx context.Context, address addrs.Socksaddr) (net.PacketConn, error) {
 	if !address.FqdnOnly() {
-		return d.underlay.ListenPacket(ctx, address)
+		return d.parallelDialer.ListenPacket(ctx, address)
 	}
-	addresses, err := d.dnsClient.Lookup(ctx, address.Fqdn, meta.StrategyDefault)
+	addresses, err := d.dnsClient.Lookup(ctx, address.Fqdn, d.strategy)
 	if err != nil {
 		return nil, ex.Cause(err, "Lookup")
 	}
-	packetConn, err := netio.ListenPacketSerial(ctx, d.underlay, addresses, address.Port)
+	packetConn, err := netio.ListenPacketSerial(ctx, d.parallelDialer, addresses, address.Port)
 	if err != nil {
 		return nil, ex.Cause(err, "ListenPacketSerial")
 	}

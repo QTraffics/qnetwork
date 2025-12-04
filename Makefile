@@ -1,3 +1,4 @@
+.PHONY: fmt , fmt_install , lint , lint_install , test, generate
 fmt:
 #	@gofumpt -l -w .
 #	@gofmt -s -w .
@@ -8,7 +9,7 @@ fmt_install:
 	go install -v mvdan.cc/gofumpt@latest
 	go install -v github.com/daixiang0/gci@latest
 
-lint:
+lint: fmt
 	GOOS=linux golangci-lint run
 
 lint_install:

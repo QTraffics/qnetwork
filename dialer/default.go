@@ -35,7 +35,7 @@ type DefaultDialer struct {
 }
 
 func (d *DefaultDialer) DialParallel(ctx context.Context, network meta.Network, address []netip.Addr, port uint16) (net.Conn, error) {
-	return DialParallel(ctx, d, network, address, port, meta.StrategyDefault, netvars.DefaultDialerFallbackDelay)
+	return DialParallel(ctx, d, network, address, port, DefaultHappyEyeballConf)
 }
 
 func (d *DefaultDialer) DialContext(ctx context.Context, network meta.Network, address addrs.Socksaddr) (net.Conn, error) {

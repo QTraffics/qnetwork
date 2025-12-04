@@ -9,27 +9,28 @@ var ErrInvalidStrategy = fmt.Errorf("network: invalid strategy")
 type Strategy uint8
 
 const (
-	StrategyDefault    Strategy = iota
-	StrategyPreferIPv4          // "prefer_ipv4"
-	StrategyPreferIPv6          // "prefer_ipv6"
-	StrategyIPv4Only            // "ipv4_only"
-	StrategyIPv6Only            // "ipv6_only"
+	StrategyPreferIPv6 Strategy = iota // "prefer_ipv6"
+	StrategyPreferIPv4                 // "prefer_ipv4"
+
+	StrategyIPv6Only // "ipv6_only"
+	StrategyIPv4Only // "ipv4_only"
+
 	strategyMax
+
+	StrategyDefault = StrategyPreferIPv6
 )
 
 func (s Strategy) String() string {
 	//nolint:exhaustive
 	switch s {
-	case StrategyPreferIPv4:
-		return "prefer_ipv4"
 	case StrategyPreferIPv6:
 		return "prefer_ipv6"
+	case StrategyPreferIPv4:
+		return "prefer_ipv4"
 	case StrategyIPv4Only:
 		return "ipv4_only"
 	case StrategyIPv6Only:
 		return "ipv6_only"
-	case StrategyDefault:
-		return "default"
 	default:
 		return fmt.Sprintf("strategy: %d", uint8(s))
 	}
