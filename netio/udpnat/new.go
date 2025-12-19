@@ -16,47 +16,46 @@ import (
 )
 
 type Option struct {
-	Prepare PrepareFunc
 	Size    uint32
-
-	Timeout        time.Duration
-	InitialHandler PacketHandler
+	Timeout time.Duration
 }
 
-type PrepareFunc func(source addrs.Socksaddr, destination addrs.Socksaddr, p netio.UDPPacket) (ok bool, onClose func(c Conn))
+type PrepareResult struct {
+	Success bool
+
+	OnClose      func(conn Conn)
+	Handler      PacketHandler
+	PacketWriter netio.PacketWriter
+}
+
+type PrepareFunc func(source addrs.Socksaddr, destination addrs.Socksaddr, p netio.UDPPacket) PrepareResult
 
 type UdpNat struct {
 	cache freelru.Cache[netip.AddrPort, *natConn]
 
-	packetWriter netio.PacketWriter
-
-	opt *Option
+	prepare PrepareFunc
+	opt     Option
 }
 
 func (u *UdpNat) NewPacket(buffers *buf.Buffer, source addrs.Socksaddr, destination addrs.Socksaddr) (Conn, bool) {
 	pack := netio.NewPacket(buffers, nil)
 	conn, exist := u.cache.GetAndRefresh(source.AddrPort(), u.opt.Timeout)
 	if !exist || conn.isClose() {
-		var onClose func(c Conn)
-		if u.opt.Prepare != nil {
-			success, onCloseFn := u.opt.Prepare(source, destination, pack)
-			if !success {
-				return nil, false
-			}
-			onClose = onCloseFn
+		prepare := u.prepare(source, destination, pack)
+		if !prepare.Success {
+			return nil, false
 		}
 
 		conn = &natConn{
-			source:      source,
-			destination: destination,
-			writer:      &netio.BindPacketWriter{PacketWriter: u.packetWriter, Destination: source},
-
-			onClose:      onClose,
+			source:       source,
+			destination:  destination,
+			writer:       prepare.PacketWriter,
+			onClose:      prepare.OnClose,
 			closeChan:    make(chan struct{}),
 			readDeadline: pipe.MakeDeadline(),
 		}
-		if u.opt.InitialHandler != nil {
-			conn.SetHandler(u.opt.InitialHandler)
+		if prepare.Handler != nil {
+			conn.SetHandler(prepare.Handler)
 		} else {
 			conn.packets = make(chan netio.UDPPacket, 64)
 		}
@@ -86,14 +85,14 @@ func (u *UdpNat) Close() error {
 	return nil
 }
 
-func New(packetWrite netio.PacketWriter, opt *Option) *UdpNat {
-	if packetWrite == nil {
-		panic("empty packet writer")
+func New(prepare PrepareFunc, opt *Option) (*UdpNat, error) {
+	if prepare == nil {
+		return nil, ex.New("prepare func required: ", opt)
 	}
-
 	if opt == nil {
 		opt = &Option{}
 	}
+
 	if opt.Timeout == 0 {
 		opt.Timeout = netvars.DefaultUDPKeepAlive
 	}
@@ -107,9 +106,10 @@ func New(packetWrite netio.PacketWriter, opt *Option) *UdpNat {
 	udpnat.cache.SetOnEvict(func(port netip.AddrPort, conn *natConn) {
 		_ = conn.Close()
 	})
-	udpnat.opt = opt
-	udpnat.packetWriter = packetWrite
-	return udpnat
+
+	udpnat.prepare = prepare
+	udpnat.opt = *opt
+	return udpnat, nil
 }
 
 var hashSeed = maphash.MakeSeed()
